@@ -1,0 +1,112 @@
+<svg viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="1000" height="640" fill="#0d1b2a"/>
+  <text x="500" y="35" fill="#ffffff" font-size="22" font-weight="bold" text-anchor="middle">Backhaul-Match — System Architecture</text>
+
+  <!-- Client layer -->
+  <text x="30" y="80" fill="#8ecae6" font-size="14" font-weight="bold">CLIENTS</text>
+  <g font-size="13" fill="#ffffff">
+    <rect x="30" y="90" width="180" height="50" rx="8" fill="#1b3a4b" stroke="#8ecae6"/>
+    <text x="120" y="120" text-anchor="middle">Courier Portal (React)</text>
+
+    <rect x="240" y="90" width="180" height="50" rx="8" fill="#1b3a4b" stroke="#8ecae6"/>
+    <text x="330" y="120" text-anchor="middle">Fleet Portal (React)</text>
+
+    <rect x="450" y="90" width="180" height="50" rx="8" fill="#1b3a4b" stroke="#8ecae6"/>
+    <text x="540" y="120" text-anchor="middle">Driver App (Flutter)</text>
+  </g>
+
+  <!-- arrows down to gateway -->
+  <g stroke="#8ecae6" stroke-width="2" fill="none">
+    <line x1="120" y1="140" x2="500" y2="200"/>
+    <line x1="330" y1="140" x2="500" y2="200"/>
+    <line x1="540" y1="140" x2="500" y2="200"/>
+  </g>
+
+  <!-- Gateway -->
+  <rect x="380" y="205" width="240" height="55" rx="8" fill="#023047" stroke="#ffb703" stroke-width="2"/>
+  <text x="500" y="228" fill="#ffb703" font-size="14" font-weight="bold" text-anchor="middle">API Gateway</text>
+  <text x="500" y="248" fill="#ffffff" font-size="11" text-anchor="middle">Spring Cloud Gateway + JWT filter</text>
+
+  <!-- Eureka -->
+  <rect x="700" y="205" width="230" height="55" rx="8" fill="#023047" stroke="#ffb703" stroke-width="2"/>
+  <text x="815" y="228" fill="#ffb703" font-size="14" font-weight="bold" text-anchor="middle">Discovery Server</text>
+  <text x="815" y="248" fill="#ffffff" font-size="11" text-anchor="middle">Eureka — service registry</text>
+  <line x1="620" y1="232" x2="700" y2="232" stroke="#ffb703" stroke-width="2" stroke-dasharray="4,3"/>
+
+  <!-- Microservices row -->
+  <text x="30" y="300" fill="#8ecae6" font-size="14" font-weight="bold">MICROSERVICES (each registers with Eureka, routed by the Gateway)</text>
+  <g font-size="11.5" fill="#ffffff">
+    <!-- row 1 -->
+    <rect x="30" y="315" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="80" y="335" text-anchor="middle">auth</text><text x="80" y="350" text-anchor="middle">-service</text>
+
+    <rect x="140" y="315" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="190" y="335" text-anchor="middle">user</text><text x="190" y="350" text-anchor="middle">-service</text>
+
+    <rect x="250" y="315" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="300" y="335" text-anchor="middle">courier</text><text x="300" y="350" text-anchor="middle">-service</text>
+
+    <rect x="360" y="315" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="410" y="335" text-anchor="middle">fleet</text><text x="410" y="350" text-anchor="middle">-service</text>
+
+    <rect x="470" y="315" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="520" y="335" text-anchor="middle">gps</text><text x="520" y="350" text-anchor="middle">-service</text>
+
+    <!-- row 2 -->
+    <rect x="30" y="375" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="80" y="395" text-anchor="middle">matching</text><text x="80" y="410" text-anchor="middle">-service</text>
+
+    <rect x="140" y="375" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="190" y="395" text-anchor="middle">notification</text><text x="190" y="410" text-anchor="middle">-service</text>
+
+    <rect x="250" y="375" width="100" height="46" rx="6" fill="#264653" stroke="#2a9d8f"/>
+    <text x="300" y="395" text-anchor="middle">payment</text><text x="300" y="410" text-anchor="middle">-service</text>
+  </g>
+
+  <!-- gateway to services fan-out -->
+  <g stroke="#ffb703" stroke-width="1.5" fill="none" opacity="0.7">
+    <line x1="450" y1="260" x2="80" y2="315"/>
+    <line x1="470" y1="260" x2="190" y2="315"/>
+    <line x1="490" y1="260" x2="300" y2="315"/>
+    <line x1="510" y1="260" x2="410" y2="315"/>
+    <line x1="530" y1="260" x2="520" y2="315"/>
+    <line x1="450" y1="260" x2="80" y2="375"/>
+    <line x1="470" y1="260" x2="190" y2="375"/>
+    <line x1="490" y1="260" x2="300" y2="375"/>
+  </g>
+
+  <!-- service-to-service note -->
+  <text x="600" y="400" fill="#f4a261" font-size="12" font-weight="bold">Service-to-service calls (bypass Gateway, via Eureka names):</text>
+  <text x="600" y="420" fill="#ffffff" font-size="11">fleet ↔ courier (validate shipment) · matching → fleet + courier + payment + notification</text>
+  <text x="600" y="437" fill="#ffffff" font-size="11">courier → matching + payment (reports) · notification → auth (email lookup)</text>
+
+  <!-- Databases -->
+  <text x="30" y="470" fill="#8ecae6" font-size="14" font-weight="bold">DATABASES (one MySQL schema per service)</text>
+  <g font-size="11" fill="#ffffff">
+    <rect x="30" y="485" width="80" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="70" y="509" text-anchor="middle">auth_db</text>
+    <rect x="120" y="485" width="80" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="160" y="509" text-anchor="middle">user_db</text>
+    <rect x="210" y="485" width="90" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="255" y="509" text-anchor="middle">courier_db</text>
+    <rect x="310" y="485" width="80" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="350" y="509" text-anchor="middle">fleet_db</text>
+    <rect x="400" y="485" width="75" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="437" y="509" text-anchor="middle">gps_db</text>
+    <rect x="485" y="485" width="100" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="535" y="509" text-anchor="middle">matching_db</text>
+    <rect x="595" y="485" width="115" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="652" y="509" text-anchor="middle">notification_db</text>
+    <rect x="720" y="485" width="95" height="40" rx="18" fill="#3a5a40" stroke="#a3b18a"/>
+    <text x="767" y="509" text-anchor="middle">payment_db</text>
+  </g>
+  <text x="30" y="545" fill="#adb5bd" font-size="11">Database-per-service: no cross-schema foreign keys — services validate each other's</text>
+  <text x="30" y="562" fill="#adb5bd" font-size="11">data via the direct service-to-service REST calls shown above, not shared tables.</text>
+
+  <!-- External -->
+  <text x="30" y="600" fill="#8ecae6" font-size="14" font-weight="bold">EXTERNAL</text>
+  <rect x="120" y="585" width="130" height="35" rx="6" fill="#6d597a" stroke="#b56576"/>
+  <text x="185" y="607" fill="#fff" font-size="11" text-anchor="middle">Google Maps API</text>
+  <rect x="270" y="585" width="130" height="35" rx="6" fill="#6d597a" stroke="#b56576"/>
+  <text x="335" y="607" fill="#fff" font-size="11" text-anchor="middle">SMTP (email, optional)</text>
+</svg>

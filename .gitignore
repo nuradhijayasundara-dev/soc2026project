@@ -1,0 +1,46 @@
+# --- Java / Maven (backend/*) ---
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/
+mvnw
+mvnw.cmd
+
+# --- Node / React (frontend/*) ---
+node_modules/
+build/
+dist/
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Flutter (driver-app/) ---
+driver-app/.dart_tool/
+driver-app/.flutter-plugin-dependencies
+driver-app/build/
+driver-app/.packages
+driver-app/pubspec.lock
+driver-app/ios/
+driver-app/android/
+driver-app/**/generated_plugin_registrant.*
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# --- Secrets / local config (never commit real credentials) ---
+**/application-local.yml
+**/*.env
+!.env.example
+
+# --- Logs ---
+*.log
+logs/
+
+# --- OSRM generated routing data (regenerate via infrastructure/osrm/start.sh; exceeds GitHub file size limits) ---
+infrastructure/osrm/data/

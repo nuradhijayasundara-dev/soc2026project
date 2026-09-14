@@ -1,0 +1,196 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # The web portals (localhost:3000 / localhost:3001) call the Gateway
+      # (localhost:18080) from a different origin — without this, every browser
+      # request (login, shipments, matching, booking…) would be blocked by CORS.
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"   # Courier Portal
+              - "http://localhost:3001"   # Fleet Portal
+              - "http://localhost:3002"   # Driver Portal (web)
+              - "http://localhost:3100"   # Unified Login Portal
+              - "http://localhost:3101"   # Admin Portal
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            maxAge: 3600
+      routes:
+        # ── Unified Authentication ─────────────────────────────────────────
+        # ADMIN-only user administration (Admin Portal): validated + role-checked.
+        # Listed FIRST so it wins over the public auth route below it.
+        - id: auth-admin
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # Public: login/register go through the single Authentication Service.
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+        # User service: ADMIN only (profile + user records for the Admin Portal)
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # ADMIN-only Fleet Management (Admin Portal): companies, trucks, drivers,
+        # trips, availability. Listed before both fleet routes below for the
+        # same reason as courier-admin further down.
+        - id: fleet-admin
+          uri: lb://FLEET-SERVICE
+          predicates:
+            - Path=/api/fleet/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # ── Driver-specific Fleet routes (Driver Portal + driver app) ───────
+        # Listed before the generic fleet route so a DRIVER can see/start only
+        # their own trips.
+        - id: fleet-driver-trips
+          uri: lb://FLEET-SERVICE
+          predicates:
+            - Path=/api/fleet/trips/my, /api/fleet/trips/*/start
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "DRIVER,FLEET_MANAGER,ADMIN"
+
+        # Fleet service: FLEET_MANAGER (and ADMIN)
+        - id: fleet-service
+          uri: lb://FLEET-SERVICE
+          predicates:
+            - Path=/api/fleet/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "FLEET_MANAGER,ADMIN"
+
+        # Driver posts GPS pings; fleet/courier read them back.
+        - id: gps-driver-location
+          uri: lb://GPS-SERVICE
+          predicates:
+            - Path=/api/gps/location
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "DRIVER,FLEET_MANAGER,ADMIN"
+
+        # GPS Tracking service: FLEET_MANAGER (live map) + COURIER_USER (shipment tracking)
+        - id: gps-service
+          uri: lb://GPS-SERVICE
+          predicates:
+            - Path=/api/gps/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "FLEET_MANAGER,COURIER_USER,ADMIN"
+
+        # ADMIN-only Courier Management (Admin Portal). Listed FIRST so it wins
+        # over the generic courier-service route below — otherwise a
+        # COURIER_USER token could reach /api/courier/admin/** too, since that
+        # route's own allowedRoles already includes ADMIN alongside COURIER_USER.
+        - id: courier-admin
+          uri: lb://COURIER-SERVICE
+          predicates:
+            - Path=/api/courier/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # Courier service: COURIER_USER (and ADMIN)
+        - id: courier-service
+          uri: lb://COURIER-SERVICE
+          predicates:
+            - Path=/api/courier/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "COURIER_USER,ADMIN"
+
+        # ADMIN-only Matching/Booking Monitoring (Admin Portal). Listed before
+        # matching-service for the same reason as courier-admin above.
+        - id: matching-admin
+          uri: lb://MATCHING-SERVICE
+          predicates:
+            - Path=/api/matching/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # Matching service: couriers request matches, fleet managers answer bookings.
+        - id: matching-service
+          uri: lb://MATCHING-SERVICE
+          predicates:
+            - Path=/api/matching/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "COURIER_USER,FLEET_MANAGER,ADMIN"
+
+        # ADMIN-only Notification Management (Admin Portal). Listed before
+        # notification-service, which otherwise allows any authenticated role.
+        - id: notifications-admin
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # Notification service: any authenticated role (bell icons in every portal).
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - JwtAuthFilter
+
+        # ADMIN-only Payment Management (Admin Portal). Listed before
+        # payment-service for the same reason as courier-admin above.
+        - id: payment-admin
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/payment/admin/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "ADMIN"
+
+        # Payment service: couriers pay invoices, fleet managers see revenue.
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - name: JwtAuthFilter
+              args:
+                allowedRoles: "COURIER_USER,FLEET_MANAGER,ADMIN"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true

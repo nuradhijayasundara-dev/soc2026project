@@ -1,0 +1,36 @@
+# Jenkins agent image for the Backhaul-Match pipeline.
+#
+# Extends the official Blue Ocean image (has git + docker client + pipeline
+# plugins) and adds what the Jenkinsfile needs:
+#   - Docker Compose v2 plugin (the official image only ships the bare CLI)
+#   - curl + jq (integration-test.sh uses them)
+#
+# Build:
+#   docker build -f JenkinsDockerfile -t jenkins-blueocean .
+#
+# Run (Windows Docker Desktop - socket is the named pipe):
+#   docker run --name jenkins-blueocean --restart on-failure --detach `
+#     -p 8080:8080 -p 50000:50000 `
+#     -v jenkins_home:/var/jenkins_home `
+#     -v //./pipe/docker_engine:/var/run/docker.sock `
+#     jenkins-blueocean
+
+FROM jenkinsci/blueocean:latest
+
+USER root
+
+ARG COMPOSE_VERSION=v2.29.7
+
+# Compose v2 must only be this one release line newer than the docker client in
+# blueocean. If docker/compose upstream moves on, pin a compatible version here.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl jq ca-certificates \
+  && mkdir -p /usr/libexec/docker/cli-plugins \
+  && curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-$(uname -m)" \
+       -o /usr/libexec/docker/cli-plugins/docker-compose \
+  && chmod +x /usr/libexec/docker/cli-plugins/docker-compose \
+  && apt-get purge -y --auto-remove curl \
+  && rm -rf /var/lib/apt/lists/* \
+  && docker compose version
+
+USER jenkins

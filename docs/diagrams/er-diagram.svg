@@ -1,0 +1,182 @@
+<svg viewBox="0 0 1100 780" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="1100" height="780" fill="#ffffff"/>
+  <text x="550" y="32" fill="#212529" font-size="22" font-weight="bold" text-anchor="middle">Backhaul-Match — Simplified ER Diagram</text>
+  <text x="550" y="52" fill="#6c757d" font-size="12" text-anchor="middle">Database-per-service: lines crossing a service boundary are app-level references, not real foreign keys</text>
+
+  <!-- helper: entity box template repeated manually -->
+  <!-- USERS (auth_db) -->
+  <g>
+    <rect x="30" y="90" width="190" height="110" fill="#fff3cd" stroke="#e0a800" stroke-width="1.5"/>
+    <rect x="30" y="90" width="190" height="26" fill="#e0a800"/>
+    <text x="125" y="108" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">users (auth_db)</text>
+    <text x="40" y="132" font-size="11">PK id</text>
+    <text x="40" y="148" font-size="11">username, email</text>
+    <text x="40" y="164" font-size="11">password (hashed)</text>
+    <text x="40" y="180" font-size="11">role: ADMIN/COURIER_OPERATOR/</text>
+    <text x="40" y="194" font-size="11">      FLEET_MANAGER/DRIVER</text>
+  </g>
+
+  <!-- COURIER_COMPANIES -->
+  <g>
+    <rect x="270" y="90" width="200" height="95" fill="#d1e7dd" stroke="#198754" stroke-width="1.5"/>
+    <rect x="270" y="90" width="200" height="26" fill="#198754"/>
+    <text x="370" y="108" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">courier_companies</text>
+    <text x="280" y="132" font-size="11">PK id</text>
+    <text x="280" y="148" font-size="11">FK user_id -&gt; users.id</text>
+    <text x="280" y="164" font-size="11">companyName, address</text>
+  </g>
+
+  <!-- SHIPMENTS -->
+  <g>
+    <rect x="510" y="90" width="220" height="160" fill="#d1e7dd" stroke="#198754" stroke-width="1.5"/>
+    <rect x="510" y="90" width="220" height="26" fill="#198754"/>
+    <text x="620" y="108" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">shipments (courier_db)</text>
+    <text x="520" y="132" font-size="11">PK id, shipmentCode</text>
+    <text x="520" y="148" font-size="11">FK courierCompanyId</text>
+    <text x="520" y="164" font-size="11">customerId, receiverId</text>
+    <text x="520" y="180" font-size="11">pickupLocation, destination</text>
+    <text x="520" y="196" font-size="11">weightKg, status</text>
+    <text x="520" y="212" font-size="11">  PENDING/MATCHED/IN_TRANSIT/</text>
+    <text x="520" y="228" font-size="11">  DELIVERED/CANCELLED</text>
+  </g>
+
+  <!-- FLEET_COMPANIES -->
+  <g>
+    <rect x="270" y="270" width="200" height="95" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1.5"/>
+    <rect x="270" y="270" width="200" height="26" fill="#0d6efd"/>
+    <text x="370" y="288" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">fleet_companies</text>
+    <text x="280" y="312" font-size="11">PK id</text>
+    <text x="280" y="328" font-size="11">FK user_id -&gt; users.id</text>
+    <text x="280" y="344" font-size="11">companyName, address</text>
+  </g>
+
+  <!-- TRUCKS -->
+  <g>
+    <rect x="30" y="270" width="200" height="95" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1.5"/>
+    <rect x="30" y="270" width="200" height="26" fill="#0d6efd"/>
+    <text x="130" y="288" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">trucks (fleet_db)</text>
+    <text x="40" y="312" font-size="11">PK id, truckNo</text>
+    <text x="40" y="328" font-size="11">FK fleetCompanyId</text>
+    <text x="40" y="344" font-size="11">capacityTon, status</text>
+  </g>
+
+  <!-- DRIVERS -->
+  <g>
+    <rect x="30" y="390" width="200" height="95" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1.5"/>
+    <rect x="30" y="390" width="200" height="26" fill="#0d6efd"/>
+    <text x="130" y="408" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">drivers (fleet_db)</text>
+    <text x="40" y="432" font-size="11">PK id</text>
+    <text x="40" y="448" font-size="11">FK fleetCompanyId, userId</text>
+    <text x="40" y="464" font-size="11">fullName, status</text>
+  </g>
+
+  <!-- TRUCK_AVAILABILITY -->
+  <g>
+    <rect x="270" y="390" width="220" height="115" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1.5"/>
+    <rect x="270" y="390" width="220" height="26" fill="#0d6efd"/>
+    <text x="380" y="408" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">truck_availability</text>
+    <text x="280" y="432" font-size="11">PK id</text>
+    <text x="280" y="448" font-size="11">FK truckId</text>
+    <text x="280" y="464" font-size="11">routeFrom, routeTo</text>
+    <text x="280" y="480" font-size="11">availableCapacityTon, tripType</text>
+    <text x="280" y="496" font-size="11">status: AVAILABLE/BOOKED/EXPIRED</text>
+  </g>
+
+  <!-- TRIPS -->
+  <g>
+    <rect x="30" y="510" width="220" height="115" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1.5"/>
+    <rect x="30" y="510" width="220" height="26" fill="#0d6efd"/>
+    <text x="140" y="528" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">trips (fleet_db)</text>
+    <text x="40" y="552" font-size="11">PK id</text>
+    <text x="40" y="568" font-size="11">FK truckId, driverId (nullable)</text>
+    <text x="40" y="584" font-size="11">shipmentId (app-level ref)</text>
+    <text x="40" y="600" font-size="11">status: SCHEDULED/IN_PROGRESS/</text>
+    <text x="40" y="616" font-size="11">        COMPLETED/CANCELLED</text>
+  </g>
+
+  <!-- MATCH_REQUESTS / RESULTS -->
+  <g>
+    <rect x="510" y="270" width="230" height="130" fill="#f8d7da" stroke="#dc3545" stroke-width="1.5"/>
+    <rect x="510" y="270" width="230" height="26" fill="#dc3545"/>
+    <text x="625" y="288" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">match_requests (matching_db)</text>
+    <text x="520" y="312" font-size="11">PK id</text>
+    <text x="520" y="328" font-size="11">shipmentId, requestedByUserId</text>
+    <text x="520" y="344" font-size="11">pickupLocation, destination, weightKg</text>
+    <text x="520" y="360" font-size="11">status: PENDING/MATCHED/NO_MATCH</text>
+    <text x="520" y="376" font-size="11">        /CANCELLED</text>
+  </g>
+
+  <g>
+    <rect x="510" y="420" width="230" height="150" fill="#f8d7da" stroke="#dc3545" stroke-width="1.5"/>
+    <rect x="510" y="420" width="230" height="26" fill="#dc3545"/>
+    <text x="625" y="438" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">match_results (matching_db)</text>
+    <text x="520" y="462" font-size="11">PK id, FK matchRequestId</text>
+    <text x="520" y="478" font-size="11">truckAvailabilityId, truckId,</text>
+    <text x="520" y="494" font-size="11">fleetCompanyId (app-level refs)</text>
+    <text x="520" y="510" font-size="11">matchScore, distanceKm,</text>
+    <text x="520" y="526" font-size="11">estimatedCost</text>
+    <text x="520" y="542" font-size="11">status: RECOMMENDED/PENDING_</text>
+    <text x="520" y="558" font-size="11">  CONFIRMATION/ACCEPTED/REJECTED</text>
+  </g>
+
+  <g>
+    <rect x="770" y="420" width="220" height="95" fill="#f8d7da" stroke="#dc3545" stroke-width="1.5"/>
+    <rect x="770" y="420" width="220" height="26" fill="#dc3545"/>
+    <text x="880" y="438" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">capacity_reservations</text>
+    <text x="780" y="462" font-size="11">PK id, FK matchResultId</text>
+    <text x="780" y="478" font-size="11">truckAvailabilityId (app-level)</text>
+    <text x="780" y="494" font-size="11">status: RESERVED/CONFIRMED/RELEASED</text>
+  </g>
+
+  <!-- INVOICES / PAYMENTS -->
+  <g>
+    <rect x="770" y="90" width="220" height="130" fill="#e2d9f3" stroke="#6f42c1" stroke-width="1.5"/>
+    <rect x="770" y="90" width="220" height="26" fill="#6f42c1"/>
+    <text x="880" y="108" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">invoices (payment_db)</text>
+    <text x="780" y="132" font-size="11">PK id, invoiceNo</text>
+    <text x="780" y="148" font-size="11">shipmentId, matchResultId (app-level)</text>
+    <text x="780" y="164" font-size="11">courierUserId, fleetCompanyId</text>
+    <text x="780" y="180" font-size="11">amount, distanceKm</text>
+    <text x="780" y="196" font-size="11">status: PENDING/PAID/FAILED</text>
+  </g>
+
+  <g>
+    <rect x="770" y="250" width="220" height="95" fill="#e2d9f3" stroke="#6f42c1" stroke-width="1.5"/>
+    <rect x="770" y="250" width="220" height="26" fill="#6f42c1"/>
+    <text x="880" y="268" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">payments (payment_db)</text>
+    <text x="780" y="292" font-size="11">PK id, FK invoiceId</text>
+    <text x="780" y="308" font-size="11">amount, method, status</text>
+    <text x="780" y="324" font-size="11">transactionRef</text>
+  </g>
+
+  <!-- NOTIFICATIONS -->
+  <g>
+    <rect x="30" y="660" width="240" height="95" fill="#ffe5d9" stroke="#fd7e14" stroke-width="1.5"/>
+    <rect x="30" y="660" width="240" height="26" fill="#fd7e14"/>
+    <text x="150" y="678" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">notifications (notification_db)</text>
+    <text x="40" y="702" font-size="11">PK id, FK userId (app-level)</text>
+    <text x="40" y="718" font-size="11">type, title, message, referenceId</text>
+    <text x="40" y="734" font-size="11">isRead, createdAt</text>
+  </g>
+
+  <!-- relationship lines (app-level, dashed where cross-service) -->
+  <g stroke="#495057" stroke-width="1.3" fill="none">
+    <line x1="220" y1="140" x2="270" y2="140"/>                 <!-- users -> courier_companies -->
+    <line x1="220" y1="160" x2="270" y2="300" stroke-dasharray="4,3"/> <!-- users -> fleet_companies -->
+    <line x1="470" y1="140" x2="510" y2="150"/>                 <!-- courier_companies -> shipments -->
+    <line x1="370" y1="185" x2="130" y2="270"/>                 <!-- fleet_companies -> trucks -->
+    <line x1="370" y1="185" x2="130" y2="390"/>                 <!-- fleet_companies -> drivers -->
+    <line x1="130" y1="365" x2="380" y2="430"/>                 <!-- trucks -> availability -->
+    <line x1="130" y1="365" x2="140" y2="510"/>                 <!-- trucks -> trips -->
+    <line x1="130" y1="485" x2="140" y2="565" stroke-dasharray="4,3"/> <!-- drivers -> trips (optional) -->
+    <line x1="620" y1="250" x2="625" y2="270" stroke-dasharray="4,3"/> <!-- shipments -> match_requests -->
+    <line x1="625" y1="396" x2="625" y2="420"/>                 <!-- match_requests -> match_results -->
+    <line x1="490" y1="440" x2="380" y2="440" stroke-dasharray="4,3"/> <!-- match_results -> availability -->
+    <line x1="740" y1="480" x2="770" y2="470"/>                 <!-- match_results -> reservations -->
+    <line x1="625" y1="396" x2="880" y2="216" stroke-dasharray="4,3"/> <!-- match_requests -> invoices -->
+    <line x1="880" y1="220" x2="880" y2="250"/>                 <!-- invoices -> payments -->
+    <line x1="625" y1="396" x2="150" y2="660" stroke-dasharray="4,3"/> <!-- match_requests -> notifications -->
+  </g>
+
+  <text x="30" y="35" fill="#6c757d" font-size="11">Legend: solid = same-service FK · dashed = cross-service app-level reference</text>
+</svg>

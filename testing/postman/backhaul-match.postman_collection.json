@@ -1,0 +1,442 @@
+{
+  "info": {
+    "name": "Backhaul-Match — Full Integration & Error Testing",
+    "description": "Mirrors testing/integration-test.sh and testing/error-test.sh in Postman form. Import backhaul-match.postman_environment.json alongside this, select it as the active environment, and run folders top-to-bottom (Runner works too, except the two 'wait for manual step' notes in folder 05).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Auth (Login)",
+      "item": [
+        {
+          "name": "Register Courier",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.environment.set('runSuffix', Date.now());"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"courier_{{runSuffix}}\",\"email\":\"courier_{{runSuffix}}@test.local\",\"password\":\"Passw0rd!\",\"role\":\"COURIER_OPERATOR\"}" }
+          }
+        },
+        {
+          "name": "Login Courier",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('courierToken', json.token);",
+            "pm.environment.set('courierUserId', json.userId);",
+            "pm.test('token received', () => pm.expect(json.token).to.not.be.empty);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"courier_{{runSuffix}}\",\"password\":\"Passw0rd!\"}" }
+          }
+        },
+        {
+          "name": "Register Fleet Manager",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"fleet_{{runSuffix}}\",\"email\":\"fleet_{{runSuffix}}@test.local\",\"password\":\"Passw0rd!\",\"role\":\"FLEET_MANAGER\"}" }
+          }
+        },
+        {
+          "name": "Login Fleet Manager",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('fleetToken', json.token);",
+            "pm.environment.set('fleetUserId', json.userId);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"fleet_{{runSuffix}}\",\"password\":\"Passw0rd!\"}" }
+          }
+        },
+        {
+          "name": "Register Driver",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"driver_{{runSuffix}}\",\"email\":\"driver_{{runSuffix}}@test.local\",\"password\":\"Passw0rd!\",\"role\":\"DRIVER\"}" }
+          }
+        },
+        {
+          "name": "Login Driver",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('driverToken', json.token);",
+            "pm.environment.set('driverUserId', json.userId);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"driver_{{runSuffix}}\",\"password\":\"Passw0rd!\"}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Company & Fleet Setup",
+      "item": [
+        {
+          "name": "Courier registers company",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/courier/company/me",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{courierToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"companyName\":\"Postman Test Courier\",\"contactPhone\":\"0771234567\"}" }
+          }
+        },
+        {
+          "name": "Fleet manager registers company",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/fleet/company/me",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{fleetToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"companyName\":\"Postman Test Fleet\",\"contactPhone\":\"0777654321\"}" }
+          }
+        },
+        {
+          "name": "Register truck",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('truckId', json.id);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/fleet/trucks",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{fleetToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"truckNo\":\"PM-{{runSuffix}}\",\"capacityTon\":5,\"truckType\":\"Box Truck\"}" }
+          }
+        },
+        {
+          "name": "Register driver (linked to Driver App account)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('driverId', json.id);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/fleet/drivers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{fleetToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"fullName\":\"Postman Driver\",\"phone\":\"0770000000\",\"licenseNo\":\"LIC-{{runSuffix}}\",\"userId\":{{driverUserId}}}" }
+          }
+        },
+        {
+          "name": "Post backhaul truck availability",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('availabilityId', json.id);",
+            "pm.test('trip type defaults to BACKHAUL', () => pm.expect(json.tripType).to.eql('BACKHAUL'));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/fleet/trucks/{{truckId}}/availability",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{fleetToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"routeFrom\":\"Colombo\",\"routeTo\":\"Kandy\",\"availableFrom\":\"2026-12-01T08:00:00\",\"availableCapacityTon\":5}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Shipment & Matching",
+      "item": [
+        {
+          "name": "Create shipment",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('shipmentId', json.id);",
+            "pm.test('shipment code generated', () => pm.expect(json.shipmentCode).to.match(/^SHP-/));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/courier/shipments",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{courierToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"newCustomer\":{\"fullName\":\"Postman Customer\"},\"receiver\":{\"fullName\":\"Postman Receiver\",\"address\":\"Kandy\"},\"pickupLocation\":\"Colombo\",\"pickupDatetime\":\"2026-12-01T09:00:00\",\"destination\":\"Kandy\",\"weightKg\":2000,\"parcelType\":\"General Cargo\"}" }
+          }
+        },
+        {
+          "name": "Request backhaul match",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('matchRequestId', json.id);"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/matching/requests",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{courierToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"shipmentId\":{{shipmentId}}}" }
+          }
+        },
+        {
+          "name": "Get match results (expect >= 1)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('at least one candidate truck found', () => pm.expect(json.length).to.be.above(0));",
+            "if (json.length > 0) pm.environment.set('matchResultId', json[0].id);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/matching/requests/{{matchRequestId}}/results",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Booking & Capacity Reservation",
+      "item": [
+        {
+          "name": "Courier accepts match (Truck Capacity Reserved)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('status is PENDING_CONFIRMATION', () => pm.expect(json.status).to.eql('PENDING_CONFIRMATION'));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/matching/results/{{matchResultId}}/accept-match",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        },
+        {
+          "name": "Verify capacity actually shows BOOKED",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "const row = json.find(a => a.id === pm.environment.get('availabilityId'));",
+            "pm.test('availability row is BOOKED', () => pm.expect(row.status).to.eql('BOOKED'));"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/fleet/trucks/{{truckId}}/availability",
+            "header": [{ "key": "Authorization", "value": "Bearer {{fleetToken}}" }]
+          }
+        },
+        {
+          "name": "Fleet sees pending booking request",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('our match result is in the pending list', () => pm.expect(json.some(r => r.id === pm.environment.get('matchResultId'))).to.be.true);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/matching/bookings/pending",
+            "header": [{ "key": "Authorization", "value": "Bearer {{fleetToken}}" }]
+          }
+        },
+        {
+          "name": "Fleet accepts booking (Fleet Receives Booking)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('status is ACCEPTED', () => pm.expect(json.status).to.eql('ACCEPTED'));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/matching/results/{{matchResultId}}/accept",
+            "header": [{ "key": "Authorization", "value": "Bearer {{fleetToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Trip, Driver Assignment & GPS",
+      "item": [
+        {
+          "name": "Get trips (find the auto-created one)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "const trip = json.find(t => t.shipmentId === pm.environment.get('shipmentId'));",
+            "pm.test('a trip was auto-created for this booking', () => pm.expect(trip).to.not.be.undefined);",
+            "if (trip) pm.environment.set('tripId', trip.id);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/fleet/trips",
+            "header": [{ "key": "Authorization", "value": "Bearer {{fleetToken}}" }]
+          }
+        },
+        {
+          "name": "Assign driver to trip",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/fleet/trips/{{tripId}}/assign-driver",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{fleetToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"driverId\":{{driverId}}}" }
+          }
+        },
+        {
+          "name": "Driver starts trip",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('status is IN_PROGRESS', () => pm.expect(json.status).to.eql('IN_PROGRESS'));"
+          ] } }],
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/fleet/trips/{{tripId}}/start",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driverToken}}" }]
+          }
+        },
+        {
+          "name": "Driver posts GPS location",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gps/location",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{driverToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"truckId\":{{truckId}},\"driverId\":{{driverId}},\"tripId\":{{tripId}},\"latitude\":7.2906,\"longitude\":80.6337,\"speedKmh\":45,\"heading\":90}" }
+          }
+        },
+        {
+          "name": "Courier tracks shipment (live GPS read-back)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('latitude matches what the driver sent', () => pm.expect(json.latitude).to.eql(7.2906));"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/gps/live/{{truckId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Payment & Notifications",
+      "item": [
+        {
+          "name": "Get my invoices",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "const inv = json.find(i => i.shipmentId === pm.environment.get('shipmentId'));",
+            "pm.test('invoice exists for this shipment', () => pm.expect(inv).to.not.be.undefined);",
+            "if (inv) pm.environment.set('invoiceId', inv.id);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/payment/invoices/mine",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        },
+        {
+          "name": "Pay invoice",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('payment succeeded (simulated)', () => pm.expect(json.status).to.eql('SUCCESS'));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/payment/invoices/{{invoiceId}}/pay",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{courierToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"method\":\"CARD\"}" }
+          }
+        },
+        {
+          "name": "Get my notifications (MATCH_FOUND, BOOKING_ACCEPTED)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('MATCH_FOUND notification present', () => pm.expect(json.some(n => n.type === 'MATCH_FOUND')).to.be.true);",
+            "pm.test('BOOKING_ACCEPTED notification present', () => pm.expect(json.some(n => n.type === 'BOOKING_ACCEPTED')).to.be.true);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications/mine",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Error Testing",
+      "item": [
+        {
+          "name": "Invalid login (wrong password)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"username\":\"courier_{{runSuffix}}\",\"password\":\"totally-wrong\"}" }
+          }
+        },
+        {
+          "name": "GPS unavailable (unknown truck)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/gps/live/999999999",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        },
+        {
+          "name": "Insufficient capacity (verify rejects oversized request)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200 (verify endpoint itself succeeds)', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('valid is false for a 500-ton request on a 5-ton truck', () => pm.expect(json.valid).to.be.false);"
+          ] } }],
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/fleet/availability/{{availabilityId}}/verify?requiredTon=500",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        },
+        {
+          "name": "Duplicate booking (accept-match twice)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 409 - already reserved by the first accept', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/matching/results/{{matchResultId}}/accept-match",
+            "header": [{ "key": "Authorization", "value": "Bearer {{courierToken}}" }]
+          }
+        },
+        {
+          "name": "Truck already reserved (direct reserve on a BOOKED slot)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 409', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/fleet/availability/{{availabilityId}}/reserve?requiredTon=1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{fleetToken}}" }]
+          }
+        },
+        {
+          "name": "Shipment cancellation",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('status is CANCELLED', () => pm.expect(json.status).to.eql('CANCELLED'));"
+          ] } }],
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/courier/shipments/{{shipmentId}}/status",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{courierToken}}" }],
+            "body": { "mode": "raw", "raw": "{\"status\":\"CANCELLED\",\"location\":\"Cancelled via Postman test\"}" }
+          }
+        }
+      ]
+    }
+  ]
+}

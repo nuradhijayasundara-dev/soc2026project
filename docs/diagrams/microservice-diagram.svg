@@ -1,0 +1,87 @@
+<svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="1000" height="560" fill="#f8f9fa"/>
+  <text x="500" y="35" fill="#212529" font-size="22" font-weight="bold" text-anchor="middle">Backhaul-Match — Microservice Map</text>
+  <text x="500" y="56" fill="#495057" font-size="12" text-anchor="middle">Eureka name in bold, port below. Solid arrows = Gateway routes (JWT-protected). Dashed = direct service-to-service calls.</text>
+
+  <!-- helper macro via repeated rects -->
+  <!-- Gateway -->
+  <rect x="420" y="80" width="160" height="55" rx="8" fill="#ffb703" stroke="#e85d04" stroke-width="2"/>
+  <text x="500" y="102" font-size="13" font-weight="bold" text-anchor="middle">API-GATEWAY</text>
+  <text x="500" y="120" font-size="11" text-anchor="middle">:8085 (host :18080)</text>
+
+  <!-- Discovery -->
+  <rect x="800" y="80" width="160" height="55" rx="8" fill="#adb5bd" stroke="#495057" stroke-width="2"/>
+  <text x="880" y="102" font-size="13" font-weight="bold" text-anchor="middle">DISCOVERY-SERVER</text>
+  <text x="880" y="120" font-size="11" text-anchor="middle">Eureka :8761</text>
+
+  <!-- Services grid -->
+  <g font-size="12" font-weight="bold" fill="#1d3557">
+    <rect x="20"  y="200" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="95" y="225" text-anchor="middle">AUTH-SERVICE</text>
+    <text x="95" y="245" font-size="11" font-weight="normal" text-anchor="middle">:8081 · auth_db</text>
+
+    <rect x="190" y="200" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="265" y="225" text-anchor="middle">USER-SERVICE</text>
+    <text x="265" y="245" font-size="11" font-weight="normal" text-anchor="middle">:8082 · user_db</text>
+
+    <rect x="360" y="200" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="435" y="225" text-anchor="middle">COURIER-SERVICE</text>
+    <text x="435" y="245" font-size="11" font-weight="normal" text-anchor="middle">:8083 · courier_db</text>
+
+    <rect x="530" y="200" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="605" y="225" text-anchor="middle">FLEET-SERVICE</text>
+    <text x="605" y="245" font-size="11" font-weight="normal" text-anchor="middle">:8084 · fleet_db</text>
+
+    <rect x="700" y="200" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="775" y="225" text-anchor="middle">GPS-SERVICE</text>
+    <text x="775" y="245" font-size="11" font-weight="normal" text-anchor="middle">:8085 · gps_db</text>
+
+    <rect x="190" y="300" width="150" height="60" rx="8" fill="#f4a261" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="265" y="325" text-anchor="middle">MATCHING-SERVICE</text>
+    <text x="265" y="345" font-size="11" font-weight="normal" text-anchor="middle">:8086 · matching_db</text>
+
+    <rect x="360" y="300" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="435" y="325" text-anchor="middle">NOTIFICATION-SVC</text>
+    <text x="435" y="345" font-size="11" font-weight="normal" text-anchor="middle">:8087 · notification_db</text>
+
+    <rect x="530" y="300" width="150" height="60" rx="8" fill="#a8dadc" stroke="#1d3557" stroke-width="1.5"/>
+    <text x="605" y="325" text-anchor="middle">PAYMENT-SERVICE</text>
+    <text x="605" y="345" font-size="11" font-weight="normal" text-anchor="middle">:8088 · payment_db</text>
+  </g>
+
+  <!-- Gateway solid arrows to every service -->
+  <g stroke="#e85d04" stroke-width="1.5" fill="none">
+    <line x1="460" y1="135" x2="95" y2="200"/>
+    <line x1="470" y1="135" x2="265" y2="200"/>
+    <line x1="490" y1="135" x2="435" y2="200"/>
+    <line x1="510" y1="135" x2="605" y2="200"/>
+    <line x1="530" y1="135" x2="775" y2="200"/>
+    <line x1="470" y1="135" x2="265" y2="300"/>
+    <line x1="480" y1="135" x2="435" y2="300"/>
+    <line x1="500" y1="135" x2="605" y2="300"/>
+  </g>
+
+  <!-- dashed service-to-service -->
+  <g stroke="#457b9d" stroke-width="1.5" stroke-dasharray="5,4" fill="none">
+    <path d="M 435 260 C 435 280, 435 280, 435 300" marker-end="url(#arrow)"/>  <!-- courier<->matching visually near -->
+    <path d="M 340 330 C 400 330, 400 330, 360 330" marker-end="url(#arrow)"/>
+    <path d="M 265 300 C 265 260, 435 260, 435 260" marker-end="url(#arrow)"/>
+    <path d="M 265 300 C 265 260, 605 260, 605 260" marker-end="url(#arrow)"/>
+    <path d="M 340 330 C 500 400, 500 330, 530 330" marker-end="url(#arrow)"/>
+    <path d="M 605 260 C 700 260, 700 260, 435 260" marker-end="url(#arrow)"/>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#457b9d"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="400" fill="#495057" font-size="12" font-weight="bold">Key service-to-service calls (matching-service is the hub):</text>
+  <text x="20" y="420" fill="#495057" font-size="11">matching → courier-service (fetch shipment) · matching → fleet-service (search/reserve/release capacity, resolve company owner)</text>
+  <text x="20" y="437" fill="#495057" font-size="11">matching → payment-service (create invoice) · matching → notification-service (all 4 notification types)</text>
+  <text x="20" y="454" fill="#495057" font-size="11">fleet → courier-service (validate shipment on trip creation) · courier → matching + payment (report figures)</text>
+  <text x="20" y="471" fill="#495057" font-size="11">notification → auth-service (email lookup, optional bonus channel)</text>
+
+  <rect x="20" y="495" width="960" height="45" rx="6" fill="#e9ecef" stroke="#adb5bd"/>
+  <text x="500" y="522" fill="#212529" font-size="12" text-anchor="middle">All 9 services + the Gateway register with Eureka. The Gateway resolves lb://SERVICE-NAME to a live instance at request time — no hardcoded hosts anywhere in this diagram are actually hardcoded in code.</text>
+</svg>

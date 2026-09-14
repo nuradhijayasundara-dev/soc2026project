@@ -1,0 +1,240 @@
+version: "3.8"
+
+# Brings up the whole platform: one MySQL instance (each service still gets
+# its own schema — createDatabaseIfNotExist=true + Hibernate ddl-auto=update
+# create them automatically on first connect, same as running locally, so no
+# separate init-SQL step is needed here), Eureka, the Gateway, all 9
+# microservices, and both React portals served via nginx.
+#
+# Run: docker compose up --build
+# Then: Eureka dashboard  -> http://localhost:8761
+#       API Gateway       -> http://localhost:18080 (host 18080 -> container 8085)
+#       OSRM routing      -> http://localhost:5000
+#       Courier Portal    -> http://localhost:3000
+#       Fleet Portal      -> http://localhost:3001
+#       MySQL (host)      -> localhost:3307 (container 3306; 3306 is taken by a
+#                           local mysqld in this dev environment, hence the remap)
+#
+# Note: Eureka takes a few seconds to come up, and services registering
+# before it's ready will just retry until it is — if something shows as
+# DOWN in the Eureka dashboard right after startup, give it ~30s and it
+# should self-heal. No manual restart should be needed, but `docker compose
+# restart <service>` fixes it instantly if it doesn't.
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [backhaul-net]
+
+  discovery-server:
+    build: ./backend/discovery-server
+    ports:
+      - "8761:8761"
+    networks: [backhaul-net]
+
+  # Local OSRM routing engine (Sri Lanka, MLD algorithm). Downloads+preprocesses
+  # the OpenStreetMap extract into a named volume on first start, then serves
+  # /route /nearest /table on :5000. Backend services keep working (Haversine
+# fallback) if this container can't fetch the extract on a flaky network.
+  osrm:
+    image: osrm/osrm-backend:latest
+    entrypoint: ["/bin/sh", "/bootstrap/start.sh"]
+    volumes:
+      - ./infrastructure/osrm:/bootstrap:ro
+      - ./infrastructure/osrm/data:/data
+    ports:
+      - "5000:5000"
+    networks: [backhaul-net]
+
+  auth-service:
+    build: ./backend/auth-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  user-service:
+    build: ./backend/user-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/user_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  courier-service:
+    build: ./backend/courier-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/courier_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  fleet-service:
+    build: ./backend/fleet-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/fleet_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  gps-service:
+    build: ./backend/gps-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gps_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  matching-service:
+    build: ./backend/matching-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/matching_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  notification-service:
+    build: ./backend/notification-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      # Email bonus stays off by default in Docker too — see notification-service/application.yml
+      NOTIFICATION_EMAIL_ENABLED: "false"
+    networks: [backhaul-net]
+
+  payment-service:
+    build: ./backend/payment-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+    networks: [backhaul-net]
+
+  api-gateway:
+    build: ./backend/api-gateway
+    ports:
+      # host 18080 -> gateway container 8085. The gateway's own application.yml
+      # defaults to 8080, so the port is pinned via SERVER_PORT below to keep
+      # the published mapping stable across rebuilds.
+      - "18080:8085"
+    depends_on:
+      discovery-server: { condition: service_started }
+      auth-service: { condition: service_started }
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      SERVER_PORT: 8085
+    networks: [backhaul-net]
+
+  courier-portal:
+    build:
+      context: ./frontend/courier-portal
+      args:
+        VITE_API_BASE_URL: http://localhost:18080/api
+        VITE_OSRM_BASE_URL: http://localhost:5000
+        VITE_LOGIN_PORTAL_URL: http://localhost:3100
+    ports:
+      - "3000:80"
+    depends_on: [api-gateway]
+    networks: [backhaul-net]
+
+  fleet-portal:
+    build:
+      context: ./frontend/fleet-portal
+      args:
+        VITE_API_BASE_URL: http://localhost:18080/api
+        VITE_LOGIN_PORTAL_URL: http://localhost:3100
+    ports:
+      - "3001:80"
+    depends_on: [api-gateway]
+    networks: [backhaul-net]
+
+  # Unified Login Portal — the ONLY place credentials are entered. It calls
+  # auth-service (via the Gateway), drops the JWT in a bm_token cookie on the
+  # shared localhost domain, then role-redirects: COURIER_USER->:3000,
+  # FLEET_MANAGER->:3001, DRIVER->:3002, ADMIN->:3101.
+  login-portal:
+    build:
+      context: ./frontend/login-portal
+      args:
+        VITE_API_BASE_URL: http://localhost:18080/api
+    ports:
+      - "3100:80"
+    depends_on: [api-gateway]
+    networks: [backhaul-net]
+
+  # Admin Portal (:3101) — platform overview + user administration (ADMIN only).
+  admin-portal:
+    build:
+      context: ./frontend/admin-portal
+      args:
+        VITE_API_BASE_URL: http://localhost:18080/api
+        VITE_LOGIN_PORTAL_URL: http://localhost:3100
+    ports:
+      - "3101:80"
+    depends_on: [api-gateway]
+    networks: [backhaul-net]
+
+  # Driver Portal (:3002) — web companion for drivers (My Trips + location ping).
+  driver-portal:
+    build:
+      context: ./frontend/driver-portal
+      args:
+        VITE_API_BASE_URL: http://localhost:18080/api
+        VITE_LOGIN_PORTAL_URL: http://localhost:3100
+    ports:
+      - "3002:80"
+    depends_on: [api-gateway]
+    networks: [backhaul-net]
+
+networks:
+  backhaul-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+

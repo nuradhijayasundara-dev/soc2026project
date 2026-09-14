@@ -1,0 +1,41 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: NOTIFICATION-SERVICE
+  datasource:
+    url: jdbc:mysql://localhost:3306/notification_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  # Email bonus — fill these in and flip notification.email.enabled to true to turn it on.
+  # Gmail example: use an "app password", not your normal password.
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-address@gmail.com
+    password: your-app-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+notification:
+  email:
+    enabled: false
+    from: no-reply@backhaul-match.local
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
