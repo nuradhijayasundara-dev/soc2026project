@@ -26,14 +26,18 @@ public class MatchController {
     }
 
     @GetMapping("/requests/{id}")
-    public ResponseEntity<MatchRequest> getRequest(@PathVariable Long id) {
-        return ResponseEntity.ok(matchingService.getRequest(id));
+    public ResponseEntity<MatchRequest> getRequest(@PathVariable Long id,
+                                                     @RequestHeader("X-User-Id") Long userId,
+                                                     @RequestHeader(value = "X-User-Role", required = false) String role) {
+        return ResponseEntity.ok(matchingService.getRequestForUser(id, userId, role));
     }
 
     // "4. MATCH RESULTS INTERFACE" — the ranked list of candidate trucks
     @GetMapping("/requests/{id}/results")
-    public ResponseEntity<List<MatchResult>> getResults(@PathVariable Long id) {
-        return ResponseEntity.ok(matchingService.getResults(id));
+    public ResponseEntity<List<MatchResult>> getResults(@PathVariable Long id,
+                                                          @RequestHeader("X-User-Id") Long userId,
+                                                          @RequestHeader(value = "X-User-Role", required = false) String role) {
+        return ResponseEntity.ok(matchingService.getResultsForUser(id, userId, role));
     }
 
     // Courier Portal's "Check again" button on a WAITING_FOR_MATCH request — forces an
@@ -59,13 +63,13 @@ public class MatchController {
 
     // Step 2a: fleet manager accepts -> "Booking accepted" notification to the courier
     @PostMapping("/results/{id}/accept")
-    public ResponseEntity<MatchResult> accept(@PathVariable Long id) {
-        return ResponseEntity.ok(matchingService.acceptBooking(id));
+    public ResponseEntity<MatchResult> accept(@PathVariable Long id, @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(matchingService.acceptBooking(id, userId));
     }
 
     // Step 2b: fleet manager declines -> "Booking rejected" notification to the courier
     @PostMapping("/results/{id}/reject")
-    public ResponseEntity<MatchResult> reject(@PathVariable Long id) {
-        return ResponseEntity.ok(matchingService.rejectBooking(id));
+    public ResponseEntity<MatchResult> reject(@PathVariable Long id, @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(matchingService.rejectBooking(id, userId));
     }
 }

@@ -26,7 +26,7 @@ public class InvoiceController {
     // once pickup/destination/route are known, before any vehicle is selected. Pure
     // calculation, no persistence — safe to call on every form keystroke/debounce tick.
     @PostMapping("/pricing/estimate")
-    public ResponseEntity<PriceEstimateResponse> estimate(@RequestBody PriceEstimateRequest request) {
+    public ResponseEntity<PriceEstimateResponse> estimate(@Valid @RequestBody PriceEstimateRequest request) {
         return ResponseEntity.ok(pricingService.calculateEstimate(request));
     }
 
@@ -44,19 +44,38 @@ public class InvoiceController {
     }
 
     @GetMapping("/invoices/{id}")
-    public ResponseEntity<Invoice> getInvoice(@PathVariable Long id) {
-        return ResponseEntity.ok(invoiceService.getById(id));
+    public ResponseEntity<Invoice> getInvoice(@PathVariable Long id,
+                                               @RequestHeader("X-User-Id") Long userId,
+                                               @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = callerFleetCompanyId(userId, role);
+        return ResponseEntity.ok(invoiceService.getForCaller(id, userId, companyId, role));
     }
 
     @GetMapping("/invoices/{id}/payments")
-    public ResponseEntity<List<Payment>> getPaymentHistory(@PathVariable Long id) {
-        return ResponseEntity.ok(invoiceService.getPaymentHistory(id));
+    public ResponseEntity<List<Payment>> getPaymentHistory(@PathVariable Long id,
+                                                             @RequestHeader("X-User-Id") Long userId,
+                                                             @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = callerFleetCompanyId(userId, role);
+        return ResponseEntity.ok(invoiceService.getPaymentHistory(id, userId, companyId, role));
     }
 
     // Payment API — courier pays an invoice (simulated)
     @PostMapping("/invoices/{id}/pay")
-    public ResponseEntity<Payment> pay(@PathVariable Long id, @Valid @RequestBody PayInvoiceRequest request) {
-        return ResponseEntity.ok(invoiceService.payInvoice(id, request));
+    public ResponseEntity<Payment> pay(@PathVariable Long id, @Valid @RequestBody PayInvoiceRequest request,
+                                        @RequestHeader("X-User-Id") Long userId,
+                                        @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = callerFleetCompanyId(userId, role);
+        return ResponseEntity.ok(invoiceService.payInvoice(id, userId, companyId, role, request));
+    }
+
+    // Resolves the caller's fleet company only when it's actually possible (FLEET_MANAGER
+    // callers own a company; COURIER_USER/ADMIN callers don't, and courier-service's own
+    // resolveCompanyId-style lookup would 404 for them).
+    private Long callerFleetCompanyId(Long userId, String role) {
+        if (!"FLEET_MANAGER".equalsIgnoreCase(role)) {
+            return null;
+        }
+        return fleetServiceClient.getCompanyIdForUser(userId);
     }
 
     // Fleet Portal's "booking revenue dashboard" — every invoice earned by this fleet company
@@ -71,12 +90,5 @@ public class InvoiceController {
     public ResponseEntity<RevenueSummaryResponse> revenueSummary(@RequestHeader("X-User-Id") Long userId) {
         Long companyId = fleetServiceClient.getCompanyIdForUser(userId);
         return ResponseEntity.ok(invoiceService.getRevenueSummary(companyId));
-    }
-
-    // "Courier Reports" cost-savings piece — called directly by courier-service
-    // (Eureka name, not through the Gateway) when it assembles its own report.
-    @GetMapping("/reports/courier-summary")
-    public ResponseEntity<CourierCostSummaryResponse> courierCostSummary(@RequestParam Long courierUserId) {
-        return ResponseEntity.ok(invoiceService.getCourierCostSummary(courierUserId));
     }
 }

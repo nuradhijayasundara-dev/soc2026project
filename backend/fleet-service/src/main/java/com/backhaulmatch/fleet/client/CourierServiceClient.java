@@ -28,7 +28,7 @@ public class CourierServiceClient {
 
     private final RestTemplate restTemplate;
 
-    private static final String COURIER_SERVICE_URL = "http://COURIER-SERVICE/api/courier/shipments/";
+    private static final String COURIER_SERVICE_URL = "http://COURIER-SERVICE/internal/shipments/";
 
     /** Returns the shipment as a raw map, or throws 404 if courier-service doesn't have it. */
     @SuppressWarnings("unchecked")

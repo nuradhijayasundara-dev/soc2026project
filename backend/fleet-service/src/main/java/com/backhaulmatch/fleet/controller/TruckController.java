@@ -36,19 +36,28 @@ public class TruckController {
 
     // "Truck details" screen
     @GetMapping("/{id}")
-    public ResponseEntity<Truck> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(truckService.getById(id));
+    public ResponseEntity<Truck> getById(@PathVariable Long id,
+                                          @RequestHeader("X-User-Id") Long userId,
+                                          @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(truckService.getForCompany(id, companyId, role));
     }
 
     @GetMapping("/{id}/availability")
-    public ResponseEntity<List<TruckAvailability>> getAvailability(@PathVariable Long id) {
-        return ResponseEntity.ok(truckService.getAvailability(id));
+    public ResponseEntity<List<TruckAvailability>> getAvailability(@PathVariable Long id,
+                                                                     @RequestHeader("X-User-Id") Long userId,
+                                                                     @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(truckService.getAvailability(id, companyId, role));
     }
 
     // "Available capacity input" screen
     @PostMapping("/{id}/availability")
     public ResponseEntity<TruckAvailability> addAvailability(@PathVariable Long id,
+                                                               @RequestHeader("X-User-Id") Long userId,
+                                                               @RequestHeader(value = "X-User-Role", required = false) String role,
                                                                @Valid @RequestBody AvailabilityRequest request) {
-        return ResponseEntity.ok(truckService.addAvailability(id, request));
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(truckService.addAvailability(id, companyId, role, request));
     }
 }

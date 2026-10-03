@@ -16,7 +16,7 @@ import java.util.Map;
 public class PaymentServiceClient {
 
     private final RestTemplate restTemplate;
-    private static final String COST_SUMMARY_URL = "http://PAYMENT-SERVICE/api/payment/reports/courier-summary";
+    private static final String COST_SUMMARY_URL = "http://PAYMENT-SERVICE/internal/reports/courier-summary";
     private static final String ESTIMATE_URL = "http://PAYMENT-SERVICE/api/payment/pricing/estimate";
 
     public BigDecimal getCostSavings(Long courierUserId) {

@@ -27,11 +27,16 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
+        User.Role requestedRole = User.Role.from(req.role());
+        if (requestedRole == User.Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot self-register as ADMIN");
+        }
+
         User user = new User();
         user.setUsername(req.username());
         user.setEmail(req.email());
         user.setPassword(passwordEncoder.encode(req.password()));
-        user.setRole(User.Role.from(req.role()));
+        user.setRole(requestedRole);
         user.setEnabled(true);
         User saved = userRepository.save(user);
 

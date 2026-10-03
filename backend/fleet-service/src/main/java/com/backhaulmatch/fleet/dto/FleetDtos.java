@@ -28,6 +28,10 @@ public class FleetDtos {
             Long userId // optional: link to the driver's auth account (role DRIVER) up front
     ) {}
 
+    // Lightweight proof-of-identity for self-service account linking: the caller must
+    // know the phone number the fleet manager registered on the driver record.
+    public record LinkAccountRequest(@NotBlank String phone) {}
+
     public record AvailabilityRequest(
             @NotBlank String routeFrom,
             @NotBlank String routeTo,

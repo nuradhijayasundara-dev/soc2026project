@@ -52,6 +52,26 @@ public class ShipmentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Shipment not found"));
     }
 
+    /** Same as getById, but rejects access to shipments owned by a different courier company (ADMIN bypasses). */
+    public Shipment getForCompany(Long id, Long callerCompanyId, String callerRole) {
+        Shipment shipment = getById(id);
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !shipment.getCourierCompanyId().equals(callerCompanyId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your shipment");
+        }
+        return shipment;
+    }
+
+    // Status transitions allowed via the status update endpoints. MATCHED can go
+    // straight to DELIVERED because trip completion (fleet-service, internal call)
+    // marks delivery directly without the courier having manually set IN_TRANSIT first.
+    private static final java.util.Map<Shipment.Status, java.util.Set<Shipment.Status>> ALLOWED_TRANSITIONS = java.util.Map.of(
+            Shipment.Status.PENDING, java.util.Set.of(Shipment.Status.MATCHED, Shipment.Status.CANCELLED),
+            Shipment.Status.MATCHED, java.util.Set.of(Shipment.Status.IN_TRANSIT, Shipment.Status.DELIVERED, Shipment.Status.CANCELLED),
+            Shipment.Status.IN_TRANSIT, java.util.Set.of(Shipment.Status.DELIVERED, Shipment.Status.CANCELLED),
+            Shipment.Status.DELIVERED, java.util.Set.of(),
+            Shipment.Status.CANCELLED, java.util.Set.of()
+    );
+
     public List<ShipmentTracking> getTrackingHistory(Long shipmentId) {
         return trackingRepository.findByShipmentIdOrderByUpdatedAtAsc(shipmentId);
     }
@@ -154,13 +174,28 @@ public class ShipmentService {
         }
     }
 
-    public Shipment updateStatus(Long shipmentId, StatusUpdateRequest req) {
+    public Shipment updateStatus(Long shipmentId, Long callerCompanyId, String callerRole, StatusUpdateRequest req) {
+        Shipment shipment = getForCompany(shipmentId, callerCompanyId, callerRole);
+        return applyStatusUpdate(shipment, req);
+    }
+
+    /** Used by the internal (non-Gateway, service-to-service) endpoint — no company ownership to check. */
+    public Shipment updateStatusInternal(Long shipmentId, StatusUpdateRequest req) {
         Shipment shipment = getById(shipmentId);
+        return applyStatusUpdate(shipment, req);
+    }
+
+    private Shipment applyStatusUpdate(Shipment shipment, StatusUpdateRequest req) {
+        Long shipmentId = shipment.getId();
         Shipment.Status newStatus;
         try {
             newStatus = Shipment.Status.valueOf(req.status().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status: " + req.status());
+        }
+        if (!ALLOWED_TRANSITIONS.getOrDefault(shipment.getStatus(), java.util.Set.of()).contains(newStatus)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot transition shipment from " + shipment.getStatus() + " to " + newStatus);
         }
         shipment.setStatus(newStatus);
         Shipment saved = shipmentRepository.save(shipment);

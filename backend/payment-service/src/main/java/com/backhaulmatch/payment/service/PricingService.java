@@ -38,7 +38,7 @@ public class PricingService {
         double km = (distanceKm == null || distanceKm <= 0) ? DEFAULT_DISTANCE_KM : distanceKm;
         BigDecimal distanceCharge = BigDecimal.valueOf(km).multiply(RATE_PER_KM);
 
-        BigDecimal tons = weightKg == null
+        BigDecimal tons = (weightKg == null || weightKg.signum() < 0)
                 ? BigDecimal.ZERO
                 : weightKg.divide(new BigDecimal("1000"), 4, RoundingMode.HALF_UP);
         BigDecimal weightCharge = tons.multiply(RATE_PER_TON);

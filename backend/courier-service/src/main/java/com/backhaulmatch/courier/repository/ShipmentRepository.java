@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     List<Shipment> findByCourierCompanyIdOrderByCreatedAtDesc(Long courierCompanyId);
+    Optional<Shipment> findByReceiverId(Long receiverId);
 
     // Native query so we only read back the numeric code, not a full row whose
     // legacy status may not map to the current entity enum.

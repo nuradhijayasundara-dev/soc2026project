@@ -29,6 +29,15 @@ public class TruckService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Truck not found"));
     }
 
+    /** Same as getById, but rejects access to a truck owned by a different fleet company (ADMIN bypasses). */
+    public Truck getForCompany(Long id, Long callerCompanyId, String callerRole) {
+        Truck truck = getById(id);
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !truck.getFleetCompanyId().equals(callerCompanyId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your truck");
+        }
+        return truck;
+    }
+
     public Truck register(Long fleetCompanyId, TruckRequest req) {
         if (truckRepository.existsByTruckNo(req.truckNo())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Truck number already registered");
@@ -50,14 +59,14 @@ public class TruckService {
     }
 
     /** "Truck details" screen: truck info + its availability list. */
-    public List<TruckAvailability> getAvailability(Long truckId) {
-        getById(truckId); // 404 if truck doesn't exist
+    public List<TruckAvailability> getAvailability(Long truckId, Long callerCompanyId, String callerRole) {
+        getForCompany(truckId, callerCompanyId, callerRole); // 404/403
         return availabilityRepository.findByTruckId(truckId);
     }
 
     /** "Available capacity input" screen: fleet manager posts a new lane + capacity + date. */
-    public TruckAvailability addAvailability(Long truckId, AvailabilityRequest req) {
-        getById(truckId);
+    public TruckAvailability addAvailability(Long truckId, Long callerCompanyId, String callerRole, AvailabilityRequest req) {
+        getForCompany(truckId, callerCompanyId, callerRole);
         TruckAvailability availability = new TruckAvailability();
         availability.setTruckId(truckId);
         availability.setRouteFrom(req.routeFrom());

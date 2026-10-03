@@ -38,6 +38,18 @@ public class TripService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));
     }
 
+    /** Same as getById, but rejects access to a trip whose truck belongs to a different fleet company (ADMIN bypasses). */
+    public Trip getForCompany(Long id, Long callerCompanyId, String callerRole) {
+        Trip trip = getById(id);
+        if (!"ADMIN".equalsIgnoreCase(callerRole)) {
+            Truck truck = truckService.getById(trip.getTruckId());
+            if (!truck.getFleetCompanyId().equals(callerCompanyId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your trip");
+            }
+        }
+        return trip;
+    }
+
     /** Driver App's "Start Trip" button. Only the assigned driver may start it. */
     public Trip startTrip(Long tripId, Long driverId) {
         Trip trip = getById(tripId);
@@ -138,14 +150,16 @@ public class TripService {
         return create(new CreateTripRequest(truckId, null, shipmentId));
     }
 
-    /** "Driver assignment" — reassign a different driver to an existing (not-yet-started) trip. */
     /** "Driver assignment" — assign (or reassign) a driver on an existing, not-yet-started trip. */
-    public Trip assignDriver(Long tripId, AssignDriverRequest req) {
-        Trip trip = getById(tripId);
+    public Trip assignDriver(Long tripId, Long callerCompanyId, String callerRole, AssignDriverRequest req) {
+        Trip trip = getForCompany(tripId, callerCompanyId, callerRole);
         if (trip.getStatus() != Trip.Status.SCHEDULED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Can only reassign a driver before the trip starts");
         }
         Driver newDriver = driverService.getById(req.driverId());
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !newDriver.getFleetCompanyId().equals(callerCompanyId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Driver does not belong to your company");
+        }
         if (newDriver.getStatus() != Driver.Status.AVAILABLE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Driver is not available");
         }

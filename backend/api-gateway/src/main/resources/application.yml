@@ -40,7 +40,16 @@ spring:
           predicates:
             - Path=/api/auth/**
 
-        # User service: ADMIN only (profile + user records for the Admin Portal)
+        # Self-service profile: any authenticated role can view/edit their own
+        # profile. Listed before the ADMIN-only route below so it wins.
+        - id: user-service-me
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/me
+          filters:
+            - JwtAuthFilter
+
+        # User service: ADMIN only (user records for the Admin Portal)
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:

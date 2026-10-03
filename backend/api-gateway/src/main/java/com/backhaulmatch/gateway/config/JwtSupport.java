@@ -14,12 +14,15 @@ import java.nio.charset.StandardCharsets;
  * outside the Gateway's route/filter chain and has to verify the token
  * itself instead of relying on JwtAuthFilter having already run.
  *
- * NOTE: for the demo this is a static shared secret; in production pull this
- * from an env var / secrets manager and keep it identical to auth-service's secret.
+ * The secret is read from the JWT_SECRET env var (matching auth-service's
+ * jwt.secret) so it is never hardcoded in source; it falls back to the same
+ * local-dev default as auth-service's application.yml only when that env
+ * var is unset, for docker-compose/demo convenience.
  */
 public final class JwtSupport {
 
-    private static final String SECRET = "backhaul-match-super-secret-key-change-me-1234567890";
+    private static final String SECRET = System.getenv().getOrDefault(
+            "JWT_SECRET", "backhaul-match-super-secret-key-change-me-1234567890");
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
     private JwtSupport() {}

@@ -75,7 +75,7 @@ public class MatchingService {
      *   6. If anything was found, notify the requester — "Match found".
      */
     public MatchRequest createAndRun(Long shipmentId, Long userId) {
-        Map<String, Object> shipment = courierServiceClient.getShipment(shipmentId);
+        Map<String, Object> shipment = courierServiceClient.getShipment(shipmentId, userId);
 
         MatchRequest request = new MatchRequest();
         request.setShipmentId(shipmentId);
@@ -290,9 +290,36 @@ public class MatchingService {
         return matchResultRepository.findByMatchRequestIdOrderByMatchScoreDesc(matchRequestId);
     }
 
+    /** Only the courier who created the request (or ADMIN) may read its candidate results. */
+    public List<MatchResult> getResultsForUser(Long matchRequestId, Long userId, String role) {
+        requireOwningCourier(getRequest(matchRequestId), userId, role);
+        return getResults(matchRequestId);
+    }
+
     public MatchRequest getRequest(Long id) {
         return matchRequestRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Match request not found"));
+    }
+
+    /** Only the courier who created the request (or ADMIN) may read it. */
+    public MatchRequest getRequestForUser(Long id, Long userId, String role) {
+        MatchRequest request = getRequest(id);
+        requireOwningCourier(request, userId, role);
+        return request;
+    }
+
+    private void requireOwningCourier(MatchRequest request, Long userId, String role) {
+        if (!"ADMIN".equalsIgnoreCase(role) && !request.getRequestedByUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This match request isn't yours");
+        }
+    }
+
+    /** Only the fleet manager whose company owns the candidate truck may accept/reject it. */
+    private void requireOwningFleetManager(MatchResult result, Long fleetManagerUserId) {
+        Long callerCompanyId = fleetServiceClient.getCompanyIdForUser(fleetManagerUserId);
+        if (callerCompanyId == null || !callerCompanyId.equals(result.getFleetCompanyId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This booking request isn't yours to decide");
+        }
     }
 
     private MatchResult getResult(Long id) {
@@ -359,8 +386,9 @@ public class MatchingService {
     }
 
     /** Fleet manager accepts — the reservation becomes permanent, siblings are auto-rejected. */
-    public MatchResult acceptBooking(Long matchResultId) {
+    public MatchResult acceptBooking(Long matchResultId, Long fleetManagerUserId) {
         MatchResult chosen = getResult(matchResultId);
+        requireOwningFleetManager(chosen, fleetManagerUserId);
         if (chosen.getStatus() != MatchResult.Status.PENDING_CONFIRMATION) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This booking request is no longer pending");
         }
@@ -404,8 +432,9 @@ public class MatchingService {
     }
 
     /** Fleet manager declines — release the reserved capacity, notify the courier, try again. */
-    public MatchResult rejectBooking(Long matchResultId) {
+    public MatchResult rejectBooking(Long matchResultId, Long fleetManagerUserId) {
         MatchResult result = getResult(matchResultId);
+        requireOwningFleetManager(result, fleetManagerUserId);
         if (result.getStatus() != MatchResult.Status.PENDING_CONFIRMATION) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This booking request is no longer pending");
         }

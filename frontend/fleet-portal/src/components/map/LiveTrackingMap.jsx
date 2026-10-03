@@ -23,8 +23,13 @@ export default function LiveTrackingMap({ plannedRoute, live, height = 320 }) {
   const [gps, setGps] = useState(null);
 
   useEffect(() => {
-    if (!live || !live.lat && !live.latitude) return;
-    setGps({ lat: live.lat ?? live.latitude, lng: live.lng ?? live.longitude });
+    const lat = live?.lat ?? live?.latitude;
+    const lng = live?.lng ?? live?.longitude;
+    if (lat == null || lng == null) {
+      setGps(null); // no live point (or feed dropped) — clear any stale marker
+      return;
+    }
+    setGps({ lat, lng });
   }, [live?.lat, live?.lng, live?.latitude, live?.longitude]);
 
   const { bounds, distanceLabel } = useMemo(() => {

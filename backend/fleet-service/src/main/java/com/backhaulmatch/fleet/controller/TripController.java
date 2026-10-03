@@ -56,8 +56,11 @@ public class TripController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Trip> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(tripService.getById(id));
+    public ResponseEntity<Trip> getById(@PathVariable Long id,
+                                         @RequestHeader("X-User-Id") Long userId,
+                                         @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(tripService.getForCompany(id, companyId, role));
     }
 
     // Driver App: "Start Trip" button
@@ -77,7 +80,10 @@ public class TripController {
     // "Driver assignment" screen: swap the driver on a not-yet-started trip
     @PatchMapping("/{id}/assign-driver")
     public ResponseEntity<Trip> assignDriver(@PathVariable Long id,
+                                              @RequestHeader("X-User-Id") Long userId,
+                                              @RequestHeader(value = "X-User-Role", required = false) String role,
                                               @Valid @RequestBody AssignDriverRequest request) {
-        return ResponseEntity.ok(tripService.assignDriver(id, request));
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(tripService.assignDriver(id, companyId, role, request));
     }
 }

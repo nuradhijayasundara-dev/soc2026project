@@ -11,6 +11,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import apiClient from '../apiClient';
 import { redirectAfterLogin } from '../portals';
+import fleetBg from '../assets/fleet-bg.svg';
 
 const hintCardBorder = {
   '& .MuiOutlinedInput-root': {
@@ -62,7 +63,11 @@ export default function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
-        background: '#0B2447',
+        backgroundColor: '#0B2447',
+        backgroundImage: `url(${fleetBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center bottom',
+        backgroundRepeat: 'no-repeat',
       }}
     >
       <Paper
@@ -72,7 +77,8 @@ export default function Login() {
           p: { xs: 3, sm: 4.5 },
           borderRadius: '20px',
           boxShadow: '0 30px 60px rgba(2,11,31,0.55)',
-          backgroundColor: '#0B2447',
+          backgroundColor: 'rgba(11,36,71,0.88)',
+          backdropFilter: 'blur(6px)',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>

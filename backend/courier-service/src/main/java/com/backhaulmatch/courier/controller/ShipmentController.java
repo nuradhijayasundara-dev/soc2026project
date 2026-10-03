@@ -34,19 +34,29 @@ public class ShipmentController {
     }
 
     @GetMapping("/shipments/{id}")
-    public ResponseEntity<Shipment> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(shipmentService.getById(id));
+    public ResponseEntity<Shipment> getById(@PathVariable Long id,
+                                             @RequestHeader("X-User-Id") Long userId,
+                                             @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(shipmentService.getForCompany(id, companyId, role));
     }
 
     @GetMapping("/shipments/{id}/tracking")
-    public ResponseEntity<List<ShipmentTracking>> getTracking(@PathVariable Long id) {
+    public ResponseEntity<List<ShipmentTracking>> getTracking(@PathVariable Long id,
+                                                                @RequestHeader("X-User-Id") Long userId,
+                                                                @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        shipmentService.getForCompany(id, companyId, role); // ownership check
         return ResponseEntity.ok(shipmentService.getTrackingHistory(id));
     }
 
     @PatchMapping("/shipments/{id}/status")
     public ResponseEntity<Shipment> updateStatus(@PathVariable Long id,
-                                                  @Valid @RequestBody StatusUpdateRequest request) {
-        return ResponseEntity.ok(shipmentService.updateStatus(id, request));
+                                                  @Valid @RequestBody StatusUpdateRequest request,
+                                                  @RequestHeader("X-User-Id") Long userId,
+                                                  @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(shipmentService.updateStatus(id, companyId, role, request));
     }
 
     @GetMapping("/dashboard/summary")

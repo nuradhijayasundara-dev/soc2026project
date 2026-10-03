@@ -30,25 +30,32 @@ public class GpsController {
     }
 
     // Fleet Portal map: all trucks' current positions, or a filtered subset via ?truckIds=1,2,3
+    // FLEET_MANAGER callers are scoped to their own company's trucks (never the whole platform).
     @GetMapping("/live")
-    public ResponseEntity<List<LiveGpsLocation>> getLive(@RequestParam(required = false) String truckIds) {
+    public ResponseEntity<List<LiveGpsLocation>> getLive(@RequestParam(required = false) String truckIds,
+                                                           @RequestHeader("X-User-Id") Long userId,
+                                                           @RequestHeader(value = "X-User-Role", required = false) String role) {
         List<Long> ids = (truckIds == null || truckIds.isBlank())
                 ? null
                 : Arrays.stream(truckIds.split(",")).map(Long::parseLong).toList();
-        return ResponseEntity.ok(gpsTrackingService.getLiveForTrucks(ids));
+        return ResponseEntity.ok(gpsTrackingService.getLiveForTrucks(ids, userId, role));
     }
 
     @GetMapping("/live/{truckId}")
-    public ResponseEntity<LiveGpsLocation> getLiveForTruck(@PathVariable Long truckId) {
-        return gpsTrackingService.getLiveForTrucks(List.of(truckId)).stream().findFirst()
+    public ResponseEntity<LiveGpsLocation> getLiveForTruck(@PathVariable Long truckId,
+                                                             @RequestHeader("X-User-Id") Long userId,
+                                                             @RequestHeader(value = "X-User-Role", required = false) String role) {
+        return gpsTrackingService.getLiveForTrucks(List.of(truckId), userId, role).stream().findFirst()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     // Tracking history — for playback on the courier tracking page or trip replay
     @GetMapping("/history/truck/{truckId}")
-    public ResponseEntity<List<GpsTrackingHistory>> getHistoryForTruck(@PathVariable Long truckId) {
-        return ResponseEntity.ok(gpsTrackingService.getHistoryForTruck(truckId));
+    public ResponseEntity<List<GpsTrackingHistory>> getHistoryForTruck(@PathVariable Long truckId,
+                                                                        @RequestHeader("X-User-Id") Long userId,
+                                                                        @RequestHeader(value = "X-User-Role", required = false) String role) {
+        return ResponseEntity.ok(gpsTrackingService.getHistoryForTruck(truckId, userId, role));
     }
 
     @GetMapping("/history/trip/{tripId}")

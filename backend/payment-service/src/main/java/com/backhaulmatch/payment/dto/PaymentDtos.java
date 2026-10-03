@@ -1,7 +1,9 @@
 package com.backhaulmatch.payment.dto;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
@@ -14,8 +16,8 @@ public class PaymentDtos {
             @NotNull Long courierUserId,
             @NotNull Long fleetCompanyId,
             String truckNo,
-            Double distanceKm,
-            BigDecimal weightKg
+            @PositiveOrZero Double distanceKm,
+            @DecimalMin(value = "0.0", message = "weightKg must not be negative") BigDecimal weightKg
     ) {}
 
     // "Payment API" — courier pays an invoice (simulated, no real gateway).
@@ -28,8 +30,8 @@ public class PaymentDtos {
     // optional except nothing is strictly required: a partial form (e.g. no
     // dimensions yet) should still return a usable ballpark, not an error.
     public record PriceEstimateRequest(
-            Double distanceKm,
-            BigDecimal weightKg,
+            @PositiveOrZero Double distanceKm,
+            @DecimalMin(value = "0.0", message = "weightKg must not be negative") BigDecimal weightKg,
             String dimensions,   // free-text "L x W x H" in cm, e.g. "120 x 80 x 100"; parsed if possible
             String vehicleType,  // e.g. "Box Truck", "Lorry", "Light Truck", "Container Truck"
             String priority      // STANDARD | EXPRESS | URGENT

@@ -20,6 +20,20 @@ const stripHash = () => {
   }
 };
 
+// The bm_token cookie carries only the raw JWT, no role — decode the "role"
+// claim from the token's own payload so a role check downstream isn't
+// silently skipped (a falsy/undefined role short-circuits that check) when a
+// session is adopted via the cookie fallback instead of the URL hash.
+const decodeRoleFromToken = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json).role || null;
+  } catch {
+    return null;
+  }
+};
+
 // Session is handed over via (a) URL hash, (b) the bm_token cookie. Adopt
 // whichever is present, then clear both so it's consumed once.
 export const adoptSessionFromCookie = () => {
@@ -39,7 +53,7 @@ export const adoptSessionFromCookie = () => {
     if (hit) {
       const value = hit.split('=').slice(1).join('=');
       if (value) {
-        saveSession(value);
+        saveSession(value, decodeRoleFromToken(value));
       }
       document.cookie = `${COOKIE}=; path=/; max-age=0`;
     }

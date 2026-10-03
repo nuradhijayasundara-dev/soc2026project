@@ -15,7 +15,7 @@ import java.util.Map;
 public class MatchingServiceClient {
 
     private final RestTemplate restTemplate;
-    private static final String URL = "http://MATCHING-SERVICE/api/matching/reports/courier-summary";
+    private static final String URL = "http://MATCHING-SERVICE/internal/reports/courier-summary";
 
     public long getSuccessfulMatchCount(Long courierUserId) {
         try {

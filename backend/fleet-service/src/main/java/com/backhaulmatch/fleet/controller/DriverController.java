@@ -1,6 +1,7 @@
 package com.backhaulmatch.fleet.controller;
 
 import com.backhaulmatch.fleet.dto.FleetDtos.DriverRequest;
+import com.backhaulmatch.fleet.dto.FleetDtos.LinkAccountRequest;
 import com.backhaulmatch.fleet.entity.Driver;
 import com.backhaulmatch.fleet.service.DriverService;
 import com.backhaulmatch.fleet.service.FleetCompanyService;
@@ -37,8 +38,11 @@ public class DriverController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Driver> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(driverService.getById(id));
+    public ResponseEntity<Driver> getById(@PathVariable Long id,
+                                           @RequestHeader("X-User-Id") Long userId,
+                                           @RequestHeader(value = "X-User-Role", required = false) String role) {
+        Long companyId = "ADMIN".equalsIgnoreCase(role) ? null : companyService.resolveCompanyId(userId);
+        return ResponseEntity.ok(driverService.getForCompany(id, companyId, role));
     }
 
     // Driver App calls this right after login to find its own profile/status.
@@ -48,9 +52,11 @@ public class DriverController {
     }
 
     // One-time "claim" — a driver logs in and links their account to the profile
-    // the fleet manager registered for them (matched by driverId, e.g. shared via SMS/email).
+    // the fleet manager registered for them (matched by driverId, e.g. shared via SMS/email),
+    // proven by supplying the phone number on file so ids can't be claimed by guessing.
     @PatchMapping("/{id}/link-account")
-    public ResponseEntity<Driver> linkAccount(@PathVariable Long id, @RequestHeader("X-User-Id") Long userId) {
-        return ResponseEntity.ok(driverService.linkAccount(id, userId));
+    public ResponseEntity<Driver> linkAccount(@PathVariable Long id, @RequestHeader("X-User-Id") Long userId,
+                                               @Valid @RequestBody LinkAccountRequest request) {
+        return ResponseEntity.ok(driverService.linkAccount(id, userId, request.phone()));
     }
 }

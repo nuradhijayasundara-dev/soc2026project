@@ -12,6 +12,7 @@ import com.backhaulmatch.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -51,6 +52,17 @@ public class InvoiceService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
     }
 
+    /** Only the courier who owns the invoice, the fleet company that earned it, or ADMIN may see it. */
+    public Invoice getForCaller(Long id, Long callerUserId, Long callerFleetCompanyId, String callerRole) {
+        Invoice invoice = getById(id);
+        boolean owner = invoice.getCourierUserId().equals(callerUserId)
+                || (callerFleetCompanyId != null && callerFleetCompanyId.equals(invoice.getFleetCompanyId()));
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !owner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your invoice");
+        }
+        return invoice;
+    }
+
     public List<Invoice> listForCourier(Long courierUserId) {
         return invoiceRepository.findByCourierUserIdOrderByCreatedAtDesc(courierUserId);
     }
@@ -66,8 +78,18 @@ public class InvoiceService {
      * one is available; the rest of the flow (invoice status, payment
      * history) doesn't need to change.
      */
-    public Payment payInvoice(Long invoiceId, PayInvoiceRequest req) {
-        Invoice invoice = getById(invoiceId);
+    @Transactional
+    public Payment payInvoice(Long invoiceId, Long callerUserId, Long callerFleetCompanyId, String callerRole, PayInvoiceRequest req) {
+        // Row-locked read: holds the lock until the transaction commits, so a
+        // concurrent pay request for the same invoice blocks until this one
+        // finishes instead of both racing past the PAID check below.
+        Invoice invoice = invoiceRepository.findByIdForUpdate(invoiceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
+        boolean owner = invoice.getCourierUserId().equals(callerUserId)
+                || (callerFleetCompanyId != null && callerFleetCompanyId.equals(invoice.getFleetCompanyId()));
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !owner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your invoice");
+        }
         if (invoice.getStatus() == Invoice.Status.PAID) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Invoice is already paid");
         }
@@ -94,7 +116,8 @@ public class InvoiceService {
         return savedPayment;
     }
 
-    public List<Payment> getPaymentHistory(Long invoiceId) {
+    public List<Payment> getPaymentHistory(Long invoiceId, Long callerUserId, Long callerFleetCompanyId, String callerRole) {
+        getForCaller(invoiceId, callerUserId, callerFleetCompanyId, callerRole); // ownership check
         return paymentRepository.findByInvoiceIdOrderByCreatedAtDesc(invoiceId);
     }
 

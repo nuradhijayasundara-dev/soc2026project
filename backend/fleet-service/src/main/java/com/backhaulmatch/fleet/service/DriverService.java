@@ -29,6 +29,15 @@ public class DriverService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver not found"));
     }
 
+    /** Same as getById, but rejects access to a driver owned by a different fleet company (ADMIN bypasses). */
+    public Driver getForCompany(Long id, Long callerCompanyId, String callerRole) {
+        Driver driver = getById(id);
+        if (!"ADMIN".equalsIgnoreCase(callerRole) && !driver.getFleetCompanyId().equals(callerCompanyId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your driver");
+        }
+        return driver;
+    }
+
     public Driver getByUserId(Long userId) {
         return repository.findByUserId(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -46,11 +55,19 @@ public class DriverService {
         return repository.save(driver);
     }
 
-    /** Lets a logged-in DRIVER account claim an unclaimed driver record by its id. */
-    public Driver linkAccount(Long driverId, Long userId) {
+    /**
+     * Lets a logged-in DRIVER account claim an unclaimed driver record by its id.
+     * Requires the phone number the fleet manager registered, as proof the caller
+     * is actually the driver — otherwise anyone could enumerate ids and claim a
+     * stranger's still-unlinked driver profile.
+     */
+    public Driver linkAccount(Long driverId, Long userId, String phone) {
         Driver driver = getById(driverId);
         if (driver.getUserId() != null && !driver.getUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This driver profile is already linked to another account");
+        }
+        if (driver.getPhone() == null || !driver.getPhone().trim().equalsIgnoreCase(phone == null ? "" : phone.trim())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Phone number does not match this driver record");
         }
         driver.setUserId(userId);
         return repository.save(driver);
